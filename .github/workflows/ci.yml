@@ -1,39 +1,24 @@
 name: Elixir CI
 
 on:
-  pull_request:
-    types:
-      - closed
+  push:
     branches:
       - main
 
 jobs:
   test:
     name: Run Elixir tests
-
-    if: github.event.pull_request.merged == true
-
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      - name: Set up Erlang and Elixir
+      - name: Set up Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: "28"
           elixir-version: "1.19"
-
-      - name: Restore dependencies cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            deps
-            _build
-          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-mix-
+          otp-version: "28"
 
       - name: Install dependencies
         run: mix deps.get
@@ -43,40 +28,25 @@ jobs:
 
   trigger-playwright:
     name: Trigger Playwright tests
-
-    if: github.event.pull_request.merged == true
-
-    needs:
-      - test
-
     runs-on: ubuntu-latest
+    needs: test
 
     steps:
       - name: Trigger Playwright workflow
         env:
           GH_TOKEN: ${{ secrets.PLAYWRIGHT_REPO_TOKEN }}
-          OWNER: maurymmarques
-          REPOSITORY: playwright-tests
-          WORKFLOW: playwright.yml
-          TARGET_BRANCH: main
-          SOURCE_REPOSITORY: ${{ github.repository }}
-          SOURCE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
-
         run: |
           curl --fail-with-body \
             --request POST \
+            --url "https://api.github.com/repos/maurymmarques/playwright-tests/actions/workflows/playwright.yml/dispatches" \
             --header "Accept: application/vnd.github+json" \
             --header "Authorization: Bearer ${GH_TOKEN}" \
-            --header "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/${OWNER}/${REPOSITORY}/actions/workflows/${WORKFLOW}/dispatches" \
-            --data "$(jq -n \
-              --arg ref "${TARGET_BRANCH}" \
-              --arg repository "${SOURCE_REPOSITORY}" \
-              --arg sha "${SOURCE_SHA}" \
-              '{
-                ref: $ref,
-                inputs: {
-                  source_repository: $repository,
-                  source_sha: $sha
-                }
-              }')"
+            --header "X-GitHub-Api-Version: 2026-03-10" \
+            --header "Content-Type: application/json" \
+            --data '{
+              "ref": "main",
+              "inputs": {
+                "source_repository": "${{ github.repository }}",
+                "source_sha": "${{ github.sha }}"
+              }
+            }'
