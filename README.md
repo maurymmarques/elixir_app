@@ -1,6 +1,6 @@
 # ElixirApp
 
-**TODO: Add description**
+**This repository contains a simple Elixir application used to demonstrate GitHub Actions and cross-repository CI/CD workflows.**
 
 ## Installation
 
@@ -18,4 +18,3 @@ end
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
 be found at <https://hexdocs.pm/elixir_app>.
-
